@@ -43,7 +43,7 @@ resource "azurerm_storage_account" "storage" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
-  is_hfs_enabled           = true # Enables Data Lake Storage Gen2
+  is_hns_enabled           = true # Enables Data Lake Storage Gen2
 
   static_website {
     index_document = "index.html"
@@ -56,8 +56,11 @@ resource "azurerm_mssql_server" "sqlserver" {
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = azurerm_resource_group.rg.location
   version                      = "12.0"
+  administrator_login          = "sqladminuser"
+  administrator_login_password = "thisIsAPassword123!"
+
   azuread_administrator {
-    login_username = data.azuread_client_config.current.display_name
+    login_username = var.sql_admin_login
     object_id      = data.azuread_client_config.current.object_id
   }
 }
@@ -88,12 +91,12 @@ resource "azurerm_cognitive_account" "openai" {
 }
 
 resource "azurerm_cognitive_deployment" "openai_deployment" {
-  name                  = "gpt-35-turbo"
+  name                  = "gpt-4o"
   cognitive_account_id  = azurerm_cognitive_account.openai.id
   model {
     format  = "OpenAI"
-    name    = "gpt-35-turbo"
-    version = "0301"
+    name    = "gpt-4o"
+    version = "2024-05-13"
   }
   scale {
     type = "Standard"
@@ -102,7 +105,7 @@ resource "azurerm_cognitive_deployment" "openai_deployment" {
 
 # 6. Azure Key Vault
 resource "azurerm_key_vault" "kv" {
-  name                        = "az-llm-bank-keyvault-${random_string.suffix.result}"
+  name                        = "az-llm-kv-${random_string.suffix.result}"
   location                    = azurerm_resource_group.rg.location
   resource_group_name         = azurerm_resource_group.rg.name
   tenant_id                   = data.azurerm_client_config.current.tenant_id
@@ -138,7 +141,7 @@ resource "azurerm_key_vault_secret" "sql_connection_string" {
 
 resource "azurerm_key_vault_secret" "openai_api_key" {
   name         = "openai-api-key"
-  value        = azurerm_cognitive_account.openai.primary_key
+  value        = azurerm_cognitive_account.openai.primary_access_key
   key_vault_id = azurerm_key_vault.kv.id
 }
 

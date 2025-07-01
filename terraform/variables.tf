@@ -1,7 +1,7 @@
 variable "location" {
   description = "The Azure region where all resources will be created."
   type        = string
-  default     = "East US"
+  default     = "UK South"
 }
 
 variable "sql_admin_login" {
